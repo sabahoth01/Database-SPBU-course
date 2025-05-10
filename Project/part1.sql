@@ -19,6 +19,13 @@ CREATE TABLE base
     status   base_status NOT NULL
 );
 
+CREATE TABLE employee_base
+(
+    emp_id  integer not null references employee on delete cascade,
+    base_id integer not null references base on delete set null,
+    primary key (emp_id, base_id)
+);
+
 -- Meal, Ready-to-Eat (MRE) : Блюдо, готовое к употреблению (MRE)
 -- это автономный индивидуальный военный рацион Соединенных Штатов, используемый Вооруженными силами Соединенных Штатов и Министерством обороны.
 CREATE TABLE mre
@@ -53,10 +60,10 @@ CREATE TYPE force_category AS ENUM ('GF', 'NAVY', 'AF');
 CREATE TABLE position
 (
     pos_id   SERIAL PRIMARY KEY,
-    name     VARCHAR(255)           NOT NULL,
+    name     VARCHAR(255)       NOT NULL,
     salary_rub   NUMERIC(10, 2) NOT NULL CHECK (salary_rub >= 50000),
     rank     VARCHAR(100),
-    equip_id INTEGER        REFERENCES equipment ON DELETE SET NULL, --foreign key
+    equip_id INTEGER   REFERENCES equipment ON DELETE SET NULL, --foreign key
     forces   force_category
 );
 
@@ -70,8 +77,7 @@ CREATE TABLE employee
     education     TEXT,
     hiring_date   DATE NOT NULL DEFAULT CURRENT_DATE,
     pos_id        INTEGER NOT NULL REFERENCES position ON DELETE RESTRICT, --foreign key
-    is_married    BOOLEAN NOT NULL,
-    base_id       INTEGER REFERENCES base ON DELETE SET NULL
+    is_married    BOOLEAN NOT NULL
 );
 
 CREATE TYPE blood_type AS ENUM ('A', 'B', 'O','AB','AO','BO');
@@ -144,10 +150,16 @@ CREATE TABLE missions_transport
 
 CREATE TABLE inspection
 (
-    emp_id       INTEGER NOT NULL REFERENCES employee,
-    trans_id     INTEGER NOT NULL REFERENCES transport,
-    service_date DATE    NOT NULL DEFAULT CURRENT_DATE,
-    PRIMARY KEY (trans_id, emp_id)
+    inspection_id           serial primary key,
+    inspector_fullname      varchar(255)              not null,
+    trans_id                integer                   not null  references transport,
+    inspection_date         date default CURRENT_DATE not null,
+    inspection_type         varchar(100)              not null,
+    result                  inspection_result         not null,
+    repair_recommendations  text,
+    status_after_inspection trans_status,
+    remarks                 text,
+    unique (inspector_fullname, trans_id, inspection_date)
 );
 
 CREATE TABLE missions_emp
@@ -157,77 +169,77 @@ CREATE TABLE missions_emp
     PRIMARY KEY (miss_id, emp_id)
 );
 
--- Good Data Population// Заполнение таблицы
-
--- Insert into base
-INSERT INTO base (location, status) VALUES
-('Base Alpha', 'OPEN'),
-('Base Bravo', 'CLOSED');
-
--- Insert into mre
-INSERT INTO mre (breakfast, lunch, dinner, food_additives, kkal, proteins, fats, carbohydrate) VALUES
-('Oatmeal', 'Chicken Stew', 'Beef Jerky', 'None', 3500, 60, 50, 300),
-('Pasta', 'Tuna Salad', 'Fruit Mix', 'None', 4000, 70, 60, 350);
-
--- Insert into equipment
-INSERT INTO equipment (camouflage, communication, intelligence, medical, mre_id, extra) VALUES
-('Green', 'Radio', 'Drone', 'First Aid Kit', 1, 'None'),
-('Desert', 'Satellite Phone', 'Recon', 'Med Kit', 2, 'None');
-
--- Insert into position
-INSERT INTO position (name, salary_rub, rank, equip_id, forces) VALUES
-('Rifleman', 60000, 'Private', 1, 'GF'),
-('Sniper', 80000, 'Corporal', 2, 'NAVY');
-
--- Insert into employee
-INSERT INTO employee (name, surname, date_of_birth, education, hiring_date, pos_id, is_married, base_id) VALUES
-('John', 'Doe', '1990-01-01', 'High School', '2023-01-01', 1, TRUE, 1),
-('Jane', 'Smith', '1985-05-15', 'Bachelor', '2023-02-01', 2, FALSE, 2);
-
--- Insert into medical_card
-INSERT INTO medical_card (emp_id, height_cm, weight_kg, diseases, blood, gender) VALUES
-(1, 180, 75, 'None', 'A', 'M'),
-(2, 165, 60, 'None', 'B', 'F');
-
--- Insert into weapon
-INSERT INTO weapon (name, type, caliber, rate_of_fire, sighting_range_m) VALUES
-('M4 Carbine', 'Rifle', 5.56, 700, 600),
-('M24 Sniper', 'Sniper Rifle', 7.62, 40, 800);
-
--- Insert into campaign
-INSERT INTO campaign (name, customer, earning, spending, execution_status) VALUES
-('Operation Alpha', 'Department of Defense', 1000000.00, 500000.00, 'FINISHED'),
-('Operation Bravo', 'NATO', 2000000.00, 1500000.00, 'ON_GOING');
-
--- Insert into mission
-INSERT INTO mission (camp_id, start_date_and_time, end_date_and_time, legal_status, departure_location, arrival_location, enemies) VALUES
-(1, '2023-01-10 08:00:00', '2023-01-15 18:00:00', TRUE, 'Base Alpha', 'Base Bravo', 'None'),
-(2, '2023-02-20 09:00:00', '2023-02-25 17:00:00', TRUE, 'Base Bravo', 'Base Alpha', 'Enemy Forces');
-
--- Insert into transport
-INSERT INTO transport (name, type, status) VALUES
-('Transport Truck', 'Ground', 'VERIFIED'),
-('Helicopter', 'Air', 'NEED_VERIFICATION');
-
--- Insert into equip_weapon
-INSERT INTO equip_weapon (equip_id, weapon_id) VALUES
-(1, 1),
-(2, 2);
-
--- Insert into missions_transport
-INSERT INTO missions_transport (miss_id, trans_id) VALUES
-(1, 1),
-(2, 2);
-
--- Insert into inspection
-INSERT INTO inspection (emp_id, trans_id, service_date) VALUES
-(1, 1, '2023-01-05'),
-(2, 2, '2023-02-15');
-
--- Insert into missions_emp
-INSERT INTO missions_emp (miss_id, emp_id) VALUES
-(1, 1),
-(2, 2);
+-- -- Good Data Population// Заполнение таблицы
+--
+-- -- Insert into base
+-- INSERT INTO base (location, status) VALUES
+-- ('Base Alpha', 'OPEN'),
+-- ('Base Bravo', 'CLOSED');
+--
+-- -- Insert into mre
+-- INSERT INTO mre (breakfast, lunch, dinner, food_additives, kkal, proteins, fats, carbohydrate) VALUES
+-- ('Oatmeal', 'Chicken Stew', 'Beef Jerky', 'None', 3500, 60, 50, 300),
+-- ('Pasta', 'Tuna Salad', 'Fruit Mix', 'None', 4000, 70, 60, 350);
+--
+-- -- Insert into equipment
+-- INSERT INTO equipment (camouflage, communication, intelligence, medical, mre_id, extra) VALUES
+-- ('Green', 'Radio', 'Drone', 'First Aid Kit', 1, 'None'),
+-- ('Desert', 'Satellite Phone', 'Recon', 'Med Kit', 2, 'None');
+--
+-- -- Insert into position
+-- INSERT INTO position (name, salary_rub, rank, equip_id, forces) VALUES
+-- ('Rifleman', 60000, 'Private', 1, 'GF'),
+-- ('Sniper', 80000, 'Corporal', 2, 'NAVY');
+--
+-- -- Insert into employee
+-- INSERT INTO employee (name, surname, date_of_birth, education, hiring_date, pos_id, is_married, base_id) VALUES
+-- ('John', 'Doe', '1990-01-01', 'High School', '2023-01-01', 1, TRUE, 1),
+-- ('Jane', 'Smith', '1985-05-15', 'Bachelor', '2023-02-01', 2, FALSE, 2);
+--
+-- -- Insert into medical_card
+-- INSERT INTO medical_card (emp_id, height_cm, weight_kg, diseases, blood, gender) VALUES
+-- (1, 180, 75, 'None', 'A', 'M'),
+-- (2, 165, 60, 'None', 'B', 'F');
+--
+-- -- Insert into weapon
+-- INSERT INTO weapon (name, type, caliber, rate_of_fire, sighting_range_m) VALUES
+-- ('M4 Carbine', 'Rifle', 5.56, 700, 600),
+-- ('M24 Sniper', 'Sniper Rifle', 7.62, 40, 800);
+--
+-- -- Insert into campaign
+-- INSERT INTO campaign (name, customer, earning, spending, execution_status) VALUES
+-- ('Operation Alpha', 'Department of Defense', 1000000.00, 500000.00, 'FINISHED'),
+-- ('Operation Bravo', 'NATO', 2000000.00, 1500000.00, 'ON_GOING');
+--
+-- -- Insert into mission
+-- INSERT INTO mission (camp_id, start_date_and_time, end_date_and_time, legal_status, departure_location, arrival_location, enemies) VALUES
+-- (1, '2023-01-10 08:00:00', '2023-01-15 18:00:00', TRUE, 'Base Alpha', 'Base Bravo', 'None'),
+-- (2, '2023-02-20 09:00:00', '2023-02-25 17:00:00', TRUE, 'Base Bravo', 'Base Alpha', 'Enemy Forces');
+--
+-- -- Insert into transport
+-- INSERT INTO transport (name, type, status) VALUES
+-- ('Transport Truck', 'Ground', 'VERIFIED'),
+-- ('Helicopter', 'Air', 'NEED_VERIFICATION');
+--
+-- -- Insert into equip_weapon
+-- INSERT INTO equip_weapon (equip_id, weapon_id) VALUES
+-- (1, 1),
+-- (2, 2);
+--
+-- -- Insert into missions_transport
+-- INSERT INTO missions_transport (miss_id, trans_id) VALUES
+-- (1, 1),
+-- (2, 2);
+--
+-- -- Insert into inspection
+-- INSERT INTO inspection (emp_id, trans_id, service_date) VALUES
+-- (1, 1, '2023-01-05'),
+-- (2, 2, '2023-02-15');
+--
+-- -- Insert into missions_emp
+-- INSERT INTO missions_emp (miss_id, emp_id) VALUES
+-- (1, 1),
+-- (2, 2);
 
 -- some example of bad population // Заполнение таблицы с ошибками; Плохая популяция данных (Эти операции завершатся неудачей из-за ограничений)
 --
